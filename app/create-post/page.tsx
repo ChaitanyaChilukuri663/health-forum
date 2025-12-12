@@ -5,21 +5,24 @@ import { supabase } from "@/lib/supabaseClient";
 import { useRouter } from "next/navigation";
 
 export default function CreatePost() {
-  const [title, setTitle] = useState("");
-  const [content, setContent] = useState("");
-  const [loading, setLoading] = useState(false);
+  const [title, setTitle] = useState<string>("");
+  const [content, setContent] = useState<string>("");
+  const [category, setCategory] = useState<string>("General"); // <-- new
+  const [loading, setLoading] = useState<boolean>(false);
   const router = useRouter();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault(); // Stop the form from refreshing the page
     setLoading(true);
 
-    // 1. Send data to Supabase
-    const { error } = await supabase
-      .from('posts')
-      .insert([
-        { title, content }
-      ]);
+    // 1. Send data to Supabase (include category)
+    const { error } = await supabase.from("posts").insert([
+      {
+        title,
+        content,
+        category, // <-- added
+      },
+    ]);
 
     if (error) {
       alert("Error creating post!");
@@ -27,7 +30,10 @@ export default function CreatePost() {
       setLoading(false);
     } else {
       // 2. If successful, go back to the homepage
-      router.push('/');
+      setTitle("");
+      setContent("");
+      setCategory("General");
+      router.push("/");
       router.refresh(); // Force the homepage to reload the new data
     }
   };
@@ -35,9 +41,29 @@ export default function CreatePost() {
   return (
     <div className="max-w-2xl mx-auto p-4 py-8">
       <h1 className="text-2xl font-bold mb-6">Ask a Question</h1>
-      
-      <form onSubmit={handleSubmit} className="space-y-6 bg-white p-6 rounded-lg shadow border">
-        
+
+      <form
+        onSubmit={handleSubmit}
+        className="space-y-6 bg-white p-6 rounded-lg shadow border"
+      >
+        {/* Category Dropdown */}
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">
+            Topic
+          </label>
+          <select
+            value={category}
+            onChange={(e) => setCategory(e.target.value)}
+            className="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 outline-none bg-white"
+          >
+            <option value="General">General Health</option>
+            <option value="Skin Care">Skin Care</option>
+            <option value="Nutrition">Nutrition &amp; Diet</option>
+            <option value="Mental Health">Mental Health</option>
+            <option value="Fitness">Fitness &amp; Exercise</option>
+          </select>
+        </div>
+
         {/* Title Input */}
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -76,7 +102,6 @@ export default function CreatePost() {
         >
           {loading ? "Posting..." : "Post Question"}
         </button>
-
       </form>
     </div>
   );
