@@ -1,17 +1,18 @@
 import { supabase } from "@/lib/supabaseClient";
 import Link from "next/link";
+import VoteButton from "@/components/VoteButton"; // <--- Added
 
 export const dynamic = "force-dynamic";
 
 export default async function Home({
   searchParams,
 }: {
-  searchParams: Promise<{ search?: string; category?: string }>; // <--- added category type
+  searchParams: Promise<{ search?: string; category?: string }>;
 }) {
   // Read URL params
   const params = await searchParams;
   const query = params.search || "";
-  const category = params.category || ""; // <--- new
+  const category = params.category || "";
 
   // Build base query
   let supabaseQuery = supabase
@@ -61,11 +62,9 @@ export default async function Home({
         </div>
       )}
 
-      {/* Header with Title + Ask Question Button */}
+      {/* Header */}
       <div className="flex justify-between items-center w-full max-w-2xl mb-8">
-        <h1 className="text-4xl font-bold text-blue-600">
-          Health Forum
-        </h1>
+        <h1 className="text-4xl font-bold text-blue-600">Health Forum</h1>
 
         <Link
           href="/create-post"
@@ -82,14 +81,19 @@ export default async function Home({
             key={post.id}
             className="bg-white p-6 rounded-lg shadow-md border border-gray-100 hover:shadow-lg transition"
           >
+            {/* Top row: Category + Votes */}
+            <div className="flex justify-between items-start mb-2">
+              {/* Clickable Category Badge */}
+              <Link
+                href={`/?category=${post.category}`}
+                className="inline-block bg-blue-100 text-blue-800 text-xs font-semibold px-2.5 py-0.5 rounded hover:bg-blue-200 transition"
+              >
+                {post.category || "General"}
+              </Link>
 
-            {/* Clickable Category Badge */}
-            <Link
-              href={`/?category=${post.category}`}
-              className="inline-block bg-blue-100 text-blue-800 text-xs font-semibold px-2.5 py-0.5 rounded mb-2 hover:bg-blue-200 transition"
-            >
-              {post.category || "General"}
-            </Link>
+              {/* Vote Button */}
+              <VoteButton postId={post.id} initialVotes={post.votes || 0} />
+            </div>
 
             <Link href={`/post/${post.id}`}>
               <h2 className="text-xl font-semibold text-gray-900 hover:text-blue-600 transition">
