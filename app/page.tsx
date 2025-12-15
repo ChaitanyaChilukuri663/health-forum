@@ -1,6 +1,7 @@
 import { supabase } from "@/lib/supabaseClient";
 import Link from "next/link";
-import VoteButton from "@/components/VoteButton"; // <--- Added
+import VoteButton from "@/components/VoteButton";
+import DeletePost from "@/components/DeletePost";
 
 export const dynamic = "force-dynamic";
 
@@ -14,20 +15,20 @@ export default async function Home({
   const query = params.search || "";
   const category = params.category || "";
 
-  // Build base query
+  // Simple query (no JOIN)
   let supabaseQuery = supabase
     .from("posts")
     .select("*")
     .order("created_at", { ascending: false });
 
-  // Filter by Search Text
+  // Filter by search text
   if (query) {
     supabaseQuery = supabaseQuery.or(
       `title.ilike.%${query}%,content.ilike.%${query}%`
     );
   }
 
-  // Filter by Category
+  // Filter by category
   if (category) {
     supabaseQuery = supabaseQuery.eq("category", category);
   }
@@ -46,7 +47,7 @@ export default async function Home({
         </div>
       )}
 
-      {/* Category filter banner */}
+      {/* If category filtered */}
       {category && (
         <div className="mb-6 flex items-center gap-4">
           <span className="text-xl font-bold text-gray-800">
@@ -81,20 +82,42 @@ export default async function Home({
             key={post.id}
             className="bg-white p-6 rounded-lg shadow-md border border-gray-100 hover:shadow-lg transition"
           >
-            {/* Top row: Category + Votes */}
+            {/* TOP ROW: Category + Vote + Delete */}
             <div className="flex justify-between items-start mb-2">
-              {/* Clickable Category Badge */}
-              <Link
-                href={`/?category=${post.category}`}
-                className="inline-block bg-blue-100 text-blue-800 text-xs font-semibold px-2.5 py-0.5 rounded hover:bg-blue-200 transition"
-              >
-                {post.category || "General"}
-              </Link>
 
-              {/* Vote Button */}
-              <VoteButton postId={post.id} initialVotes={post.votes || 0} />
+              {/* LEFT SIDE: Category + Vote */}
+              <div className="flex gap-2 items-center">
+                {/* Clickable Category Badge */}
+                <Link
+                  href={`/?category=${post.category}`}
+                  className="inline-block bg-blue-100 text-blue-800 text-xs font-semibold px-2.5 py-0.5 rounded hover:bg-blue-200 transition"
+                >
+                  {post.category || "General"}
+                </Link>
+
+                {/* Vote Button */}
+                <VoteButton postId={post.id} initialVotes={post.votes || 0} />
+              </div>
+
+              {/* RIGHT SIDE: Delete Button (updated → no currentUserId needed) */}
+              <DeletePost postId={post.id} authorId={post.user_id} />
             </div>
 
+            {/* AUTHOR INFO */}
+            {post.author_name && (
+              <div className="flex items-center gap-2 mb-2">
+                <img
+                  src={post.author_avatar || "/default-avatar.png"}
+                  alt={post.author_name}
+                  className="w-5 h-5 rounded-full"
+                />
+                <span className="text-xs text-gray-500">
+                  {post.author_name}
+                </span>
+              </div>
+            )}
+
+            {/* TITLE + CONTENT */}
             <Link href={`/post/${post.id}`}>
               <h2 className="text-xl font-semibold text-gray-900 hover:text-blue-600 transition">
                 {post.title}
@@ -107,7 +130,7 @@ export default async function Home({
           </div>
         ))}
 
-        {/* If no posts exist */}
+        {/* No posts fallback */}
         {posts?.length === 0 && (
           <p className="text-center text-gray-500">No discussions yet.</p>
         )}
