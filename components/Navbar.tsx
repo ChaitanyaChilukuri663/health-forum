@@ -1,6 +1,6 @@
 "use client";
 
-import Link from "next/link";
+import Link from "next/link"; // <--- This is crucial for clicking
 import SearchBar from "./SearchBar";
 import { supabase } from "@/lib/supabaseClient";
 import { useEffect, useState } from "react";
@@ -12,17 +12,17 @@ export default function Navbar() {
   const router = useRouter();
 
   useEffect(() => {
-    // 1. Check if user is already logged in
+    // 1. Check user on load
     const checkUser = async () => {
       const { data: { session } } = await supabase.auth.getSession();
       setUser(session?.user || null);
     };
     checkUser();
 
-    // 2. Listen for login/logout events automatically
+    // 2. Listen for login/logout
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       setUser(session?.user || null);
-      router.refresh(); // Refresh page to update permissions
+      router.refresh(); 
     });
 
     return () => subscription.unsubscribe();
@@ -58,28 +58,35 @@ export default function Navbar() {
             <SearchBar />
             
             {user ? (
-              // If Logged In: Show Profile & Logout
+              // LOGGED IN STATE
               <div className="flex items-center gap-3">
-                 {/* User Avatar */}
-                 {user.user_metadata.avatar_url && (
-                    <img 
-                      src={user.user_metadata.avatar_url} 
-                      alt="Profile" 
-                      className="w-8 h-8 rounded-full border border-gray-200"
-                    />
-                 )}
-                 <div className="hidden md:block text-sm">
-                    <p className="font-medium text-gray-700">{user.user_metadata.full_name}</p>
-                 </div>
+                 
+                 {/* This Link makes the profile clickable */}
+                 <Link 
+                    href="/profile" 
+                    className="flex items-center gap-2 hover:bg-gray-100 p-2 rounded-md transition cursor-pointer"
+                 >
+                    {user.user_metadata.avatar_url && (
+                        <img 
+                        src={user.user_metadata.avatar_url} 
+                        alt="Profile" 
+                        className="w-8 h-8 rounded-full border border-gray-200"
+                        />
+                    )}
+                    <div className="hidden md:block text-sm">
+                        <p className="font-medium text-gray-700">{user.user_metadata.full_name}</p>
+                    </div>
+                 </Link>
+
                  <button 
                    onClick={handleLogout}
-                   className="text-sm text-red-600 hover:text-red-800"
+                   className="text-sm text-red-600 hover:text-red-800 ml-2 border border-red-100 px-3 py-1 rounded-full hover:bg-red-50"
                  >
                    Logout
                  </button>
               </div>
             ) : (
-              // If Logged Out: Show Login Button
+              // LOGGED OUT STATE
               <button 
                 onClick={handleLogin}
                 className="bg-blue-600 text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-blue-700 transition flex items-center gap-2"
