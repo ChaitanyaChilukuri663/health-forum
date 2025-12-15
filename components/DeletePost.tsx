@@ -10,14 +10,24 @@ export default function DeletePost({ postId, authorId }: { postId: string, autho
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
 
   useEffect(() => {
+    // 1. Check user immediately on load
     const checkUser = async () => {
       const { data: { user } } = await supabase.auth.getUser();
       setCurrentUserId(user?.id || null);
     };
     checkUser();
+
+    // 2. LISTEN for changes (Login/Logout)
+    // This part runs automatically whenever you log in or log out anywhere on the site
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      setCurrentUserId(session?.user?.id || null);
+    });
+
+    // Cleanup the listener when looking away
+    return () => subscription.unsubscribe();
   }, []);
 
-  // FIX 1: If I am not logged in, OR IDs don't match, hide button.
+  // Strict check: Must match IDs
   if (!currentUserId || currentUserId !== authorId) return null;
 
   const handleDelete = async () => {
@@ -26,21 +36,18 @@ export default function DeletePost({ postId, authorId }: { postId: string, autho
 
     setIsDeleting(true);
 
-    // FIX 2: We ask Supabase to return the 'count' of deleted rows
     const { error, count } = await supabase
       .from('posts')
-      .delete({ count: 'exact' }) // <--- This is important
+      .delete({ count: 'exact' })
       .eq('id', postId);
 
     if (error) {
       alert("Error: " + error.message);
       setIsDeleting(false);
     } else if (count === 0) {
-      // If no error, but count is 0, it means RLS blocked us silently
       alert("Permission denied: You cannot delete this post.");
       setIsDeleting(false);
     } else {
-      // Success!
       router.refresh(); 
     }
   };
